@@ -3,7 +3,7 @@ import StockForm from '../components/StockForm';
 import ResultCard from '../components/ResultCard';
 import ChartSection from '../components/ChartSection';
 import PortfolioCard from '../components/PortfolioCard';
-import { analyzeStock } from '../services/api';
+import { analyzeStock } from '../api/Analyzeapi';
 
 const Dashboard = () => {
   const [result, setResult] = useState(null);
