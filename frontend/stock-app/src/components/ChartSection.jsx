@@ -1,15 +1,43 @@
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend
+} from 'recharts';
+
+const dummyData = [
+  { time: '10:00', price: 102, ma: 104 },
+  { time: '11:00', price: 105, ma: 104 },
+  { time: '12:00', price: 108, ma: 104.5 },
+  { time: '13:00', price: 107, ma: 105 },
+  { time: '14:00', price: 110, ma: 105.5 },
+  { time: '15:00', price: 112, ma: 105 },
+  { time: '16:00', price: 112, ma: 105 },
+];
+
 const ChartSection = () => {
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-lg h-[400px] flex flex-col">
-      <h2 className="text-xl font-bold text-white mb-4">Price Chart</h2>
-      <div className="flex-1 border-2 border-dashed border-slate-700 rounded-lg flex items-center justify-center bg-slate-950/50">
-        <div className="text-center">
-          <svg className="mx-auto h-12 w-12 text-slate-600 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-          </svg>
-          <p className="text-slate-400 font-medium">Chart visualization placeholder</p>
-          <p className="text-sm text-slate-500 mt-1">Interactive chart will be integrated here</p>
-        </div>
+    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm h-[350px] flex flex-col">
+      <h2 className="text-lg font-bold text-slate-900 mb-3">Price Chart (Dummy Data)</h2>
+      <div className="flex-1 w-full bg-slate-50 rounded-lg p-2 border border-slate-200">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={dummyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+            <XAxis dataKey="time" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+            <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} domain={['auto', 'auto']} />
+            <Tooltip 
+              contentStyle={{ backgroundColor: '#ffffff', borderColor: '#cbd5e1', borderRadius: '0.5rem', color: '#0f172a', boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)' }}
+              itemStyle={{ color: '#0f172a' }}
+            />
+            <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+            <Line type="monotone" dataKey="price" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} name="Price" />
+            <Line type="monotone" dataKey="ma" stroke="#f59e0b" strokeWidth={2} dot={false} strokeDasharray="5 5" name="Moving Avg" />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );

@@ -4,9 +4,20 @@ export const analyzeStock = async (data) => {
     setTimeout(() => {
       resolve({
         decision: "BUY",
-        explanation: "Price is above moving average indicating bullish trend. Volume supports upward momentum.",
+        score: 3,
+        confidence: "High",
         price: 112,
         ma: 105,
+        indicators: {
+          ma_signal: "+2",
+          rsi_signal: "0",
+          trend_signal: "+1"
+        },
+        explanation: [
+          "Price above moving average (+2)",
+          "RSI neutral (0)",
+          "Uptrend detected (+1)"
+        ]
       });
     }, 1500);
   });

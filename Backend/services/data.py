@@ -1,29 +1,56 @@
 """
 Data Service
 
-Provides simulated stock price data.
-In a production system this would be replaced by a real market-data provider.
+Fetches real stock price data from Yahoo Finance via yfinance.
+Returns historical closing prices for technical analysis.
 """
 
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import datetime
 from typing import Optional
 
-# ---------------------------------------------------------------------------
-# In-memory price store (symbol → list of historical closing prices)
-# ---------------------------------------------------------------------------
-
-_PRICE_STORE: dict[str, list[float]] = {
-    "AAPL":  [100, 102, 101, 105, 110, 108, 112],
-    "GOOG":  [2800, 2820, 2810, 2850, 2870, 2860, 2880],
-    "TSLA":  [700, 710, 705, 720, 730, 725, 740],
-    "AMZN":  [3300, 3320, 3310, 3350, 3370, 3360, 3380],
-    "MSFT":  [310, 315, 312, 318, 322, 320, 325],
-}
+import yfinance as yf
 
 
-def get_prices(symbol: str) -> Optional[list[float]]:
-    """Return the simulated price history for a given stock symbol.
+@dataclass
+class StockData:
+    """Container for fetched stock market data."""
+    prices: list[float]
+    timestamp: Optional[str]
 
-    Lookup is case-insensitive so that ``aapl`` and ``AAPL`` both work.
-    Returns ``None`` if the symbol is not found.
+
+def fetch_stock_data(symbol: str) -> StockData:
+    """Fetch the last 7 days of closing prices for a given stock symbol.
+
+    Uses Yahoo Finance as the data source.  The symbol lookup is
+    case-insensitive (yfinance handles normalisation internally).
+
+    Args:
+        symbol: A valid stock ticker (e.g. ``"AAPL"``, ``"GOOG"``).
+
+    Returns:
+        A ``StockData`` object containing closing prices (oldest → newest)
+        and the ISO-formatted date of the most recent trading day.
+
+    Raises:
+        ValueError: If the symbol is invalid or fewer than 5 data points
+                    are returned (weekends / holidays can reduce the window).
     """
-    return _PRICE_STORE.get(symbol.upper())
+    stock = yf.Ticker(symbol.upper())
+    hist = stock.history(period="7d")
+
+    prices = hist["Close"].tolist()
+
+    if not prices or len(prices) < 5:
+        raise ValueError(
+            f"Not enough data for symbol '{symbol}'. "
+            "It may be invalid or the market may have been closed."
+        )
+
+    # Extract latest trading-day timestamp
+    latest: datetime = hist.index[-1].to_pydatetime()
+    timestamp = latest.strftime("%Y-%m-%d")
+
+    return StockData(prices=prices, timestamp=timestamp)
