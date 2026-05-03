@@ -2,17 +2,18 @@
 Route: /analyze
 
 Accepts a stock symbol and risk level, orchestrates the data → indicator →
-decision pipeline, and returns a fully explainable JSON response.
+decision pipeline, and returns a fully explainable JSON response including
+a `history` array for chart rendering.
 
 Uses ``asyncio.to_thread`` to run the blocking yfinance call without
 stalling the async event loop.
 """
 
 import asyncio
+from typing import Any, List, Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from typing import Any, Optional
 
 from services.data import fetch_stock_data
 from services.indicator import moving_average, calculate_rsi, price_trend
@@ -40,6 +41,12 @@ class IndicatorDetail(BaseModel):
     trend_signal: str
 
 
+class HistoryPoint(BaseModel):
+    time: str
+    price: float
+    ma: float
+
+
 class AnalyzeResponse(BaseModel):
     decision: str
     score: int
@@ -50,7 +57,8 @@ class AnalyzeResponse(BaseModel):
     trend: str
     timestamp: Optional[str] = None
     indicators: IndicatorDetail
-    explanation: list[str]
+    explanation: List[str]
+    history: List[HistoryPoint] = []
 
 
 # ---------------------------------------------------------------------------
@@ -59,7 +67,8 @@ class AnalyzeResponse(BaseModel):
 
 @router.post("/analyze", response_model=AnalyzeResponse)
 async def analyze_stock(payload: AnalyzeRequest):
-    """Analyze a stock symbol and return a multi-indicator, scored decision."""
+    """Analyze a stock symbol and return a multi-indicator, scored decision
+    along with a full history array suitable for chart rendering."""
 
     # ── Fetch real price data (blocking → offloaded to thread) ──────────
     try:
@@ -73,6 +82,7 @@ async def analyze_stock(payload: AnalyzeRequest):
         )
 
     prices = stock_data.prices
+    dates = stock_data.dates
 
     # ── Compute indicators ──────────────────────────────────────────────
     period = min(5, len(prices))
@@ -92,5 +102,22 @@ async def analyze_stock(payload: AnalyzeRequest):
     )
 
     result["timestamp"] = stock_data.timestamp
+
+    # ── Build per-day history for the chart ─────────────────────────────
+    # For each trading day we compute a rolling 5-day MA up to that point.
+    history: List[dict] = []
+    for i, (price, date) in enumerate(zip(prices, dates)):
+        if i < period - 1:
+            # Not enough data yet for a full MA window — skip early points
+            continue
+        window = prices[max(0, i - period + 1): i + 1]
+        day_ma = round(sum(window) / len(window), 2)
+        history.append({
+            "time": date,
+            "price": round(price, 2),
+            "ma": day_ma,
+        })
+
+    result["history"] = history
 
     return AnalyzeResponse(**result)

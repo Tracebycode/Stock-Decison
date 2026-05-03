@@ -1,24 +1,11 @@
-export const analyzeStock = async (data) => {
-  // Mock API call
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        decision: "BUY",
-        score: 3,
-        confidence: "High",
-        price: 112,
-        ma: 105,
-        indicators: {
-          ma_signal: "+2",
-          rsi_signal: "0",
-          trend_signal: "+1"
-        },
-        explanation: [
-          "Price above moving average (+2)",
-          "RSI neutral (0)",
-          "Uptrend detected (+1)"
-        ]
-      });
-    }, 1500);
+export async function analyzeStock(data) {
+  const res = await fetch("http://localhost:5000/analyze", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
   });
-};
+
+  if (!res.ok) throw new Error("API Error");
+
+  return res.json();
+}

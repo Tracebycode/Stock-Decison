@@ -1,56 +1,34 @@
 """
-Data Service
-
-Fetches real stock price data from Yahoo Finance via yfinance.
-Returns historical closing prices for technical analysis.
+Data Service — fetches real OHLCV data from Yahoo Finance via yfinance.
+Returns closing prices + display dates for indicator computation and chart rendering.
 """
 
 from __future__ import annotations
-
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
-
+from typing import List, Optional
 import yfinance as yf
 
 
 @dataclass
 class StockData:
-    """Container for fetched stock market data."""
     prices: list[float]
-    timestamp: Optional[str]
+    dates: List[str] = field(default_factory=list)
+    timestamp: Optional[str] = None
 
 
 def fetch_stock_data(symbol: str) -> StockData:
-    """Fetch the last 7 days of closing prices for a given stock symbol.
-
-    Uses Yahoo Finance as the data source.  The symbol lookup is
-    case-insensitive (yfinance handles normalisation internally).
-
-    Args:
-        symbol: A valid stock ticker (e.g. ``"AAPL"``, ``"GOOG"``).
-
-    Returns:
-        A ``StockData`` object containing closing prices (oldest → newest)
-        and the ISO-formatted date of the most recent trading day.
-
-    Raises:
-        ValueError: If the symbol is invalid or fewer than 5 data points
-                    are returned (weekends / holidays can reduce the window).
-    """
     stock = yf.Ticker(symbol.upper())
-    hist = stock.history(period="7d")
-
+    hist = stock.history(period="14d")
     prices = hist["Close"].tolist()
 
     if not prices or len(prices) < 5:
         raise ValueError(
-            f"Not enough data for symbol '{symbol}'. "
-            "It may be invalid or the market may have been closed."
+            f"Not enough data for '{symbol}'. It may be invalid or markets were closed."
         )
 
-    # Extract latest trading-day timestamp
+    dates: List[str] = [idx.to_pydatetime().strftime("%b %d") for idx in hist.index]
     latest: datetime = hist.index[-1].to_pydatetime()
-    timestamp = latest.strftime("%Y-%m-%d")
+    timestamp = latest.strftime("%Y-%m-%d %H:%M UTC")
 
-    return StockData(prices=prices, timestamp=timestamp)
+    return StockData(prices=prices, dates=dates, timestamp=timestamp)
